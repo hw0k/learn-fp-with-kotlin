@@ -20,11 +20,6 @@ private fun <T> Array<out T>.toFunList(): FunList<T> = when {
 
 fun <T> FunList<T>.addHead(head: T): FunList<T> = FunList.Cons(head, this)
 
-// fun <T> FunList<T>.appendTail(value: T): FunList<T> = when (this) {
-//   FunList.Nil -> Cons(value, Nil)
-//   is FunList.Cons -> Cons(head, tail.appendTail(value))
-// }
-
 tailrec fun <T> FunList<T>.appendTail(value: T, acc: FunList<T> = Nil): FunList<T> = when (this) {
   FunList.Nil -> Cons(value, acc).reverse()
   is FunList.Cons -> tail.appendTail(value, acc.addHead(head))
@@ -85,6 +80,49 @@ tailrec fun <T> FunList<T>.dropWhile(p: (T) -> Boolean): FunList<T> = when (this
   }
 }
 
+/**
+ * 5-6: 리스트의 앞에서부터 n개의 값을 가진 리스트를 반환하는 take 함수를
+ * 구현하자. 이때 원본 리스트가 바뀌지 않고, 새로운 리스트를 반환할때 매번
+ * 리스트를 생성하지 않아야 한다.
+ */
+tailrec fun <T> FunList<T>.take(n: Int, acc: FunList<T> = Nil): FunList<T> = when {
+  n == 0 -> acc
+  else -> when (this) {
+    FunList.Nil -> acc
+    is FunList.Cons -> tail.take(n - 1, acc.appendTail(head))
+  }
+}
+
+/**
+ * 5-7: 다음과 같이 동작하는 takeWhile 함수를 구현하자. 타입 T를 입력받아
+ * Boolean을 반환하는 함수 p를 받는다. 리스트의 앞에서부터 함수 p를 만족하는
+ * 값들의 리스트를 반환한다.(모든 값이 함수 p를 만족하지 않는다면 원본 List를 반환).
+ * 이때 원본 리스트가 바뀌지 않고, 새로운 리스트를 반환할 때 매번 리스트를 생성하지
+ * 않아야 한다.
+ */
+tailrec fun <T> FunList<T>.takeWhile(acc: FunList<T> = Nil, p: (T) -> Boolean): FunList<T> = when (this) {
+  FunList.Nil -> acc
+  is FunList.Cons -> if (p(head)) {
+    tail.takeWhile(acc.appendTail(head), p)
+  } else {
+    tail.takeWhile(acc, p)
+  }
+}
+
+tailrec fun <T, R> FunList<T>.map(acc: FunList<R> = Nil, f: (T) -> R): FunList<R> = when (this) {
+  FunList.Nil -> acc.reverse()
+  is FunList.Cons -> tail.map(acc.addHead(f(head)), f)
+}
+
+/**
+ * 5-8: 앞서 작성한 map 함수에서 고차함수가 값들의 순서값(인덱스)값도
+ * 같이 받아올 수 있는 indexedMap 함수를 만들자.
+ */
+tailrec fun <T, R> FunList<T>.indexedMap(index: Int = 0, acc: FunList<R> = Nil, f: (Int, T) -> R): FunList<R> = when (this) {
+  FunList.Nil -> acc.reverse()
+  is FunList.Cons -> tail.indexedMap(index + 1, acc.addHead(f(index, head)), f)
+}
+
 val list: FunList<Int> = Cons(1, Cons(2, Cons(3, Nil)))
 
 /**
@@ -122,4 +160,14 @@ fun main() {
   require(intList3.take(2) == funListOf(1, 2))
   require(intList3.take(3) == funListOf(1, 2, 3))
   require(intList3.take(4) == funListOf(1, 2, 3))
+
+  // 5-7
+  val intList4 = Cons(1, Cons(2, Cons(3, Cons(4, Nil))))
+  require(intList4.takeWhile { it < 4 } == funListOf(1, 2, 3))
+  require(intList4.takeWhile { it < 2 } == funListOf(1))
+  require(intList4.takeWhile { it < 0 } == Nil)
+
+  // 5-8
+  val intList5 = Cons(1, Cons(2, Cons(3, Nil)))
+  require(intList5.indexedMap { index, elm -> index * elm } == funListOf(0, 2, 6))
 }
